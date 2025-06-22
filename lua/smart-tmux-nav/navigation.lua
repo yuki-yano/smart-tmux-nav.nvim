@@ -411,11 +411,6 @@ function M.process_tmux_window_selection()
       vim.fn.system('tmux set-environment -u NVIM_CURSOR_X')
       vim.fn.system('tmux set-environment -u NVIM_SELECT_DIRECTION')
       vim.fn.system('tmux set-environment -u NVIM_IS_CYCLE')
-
-      -- Clear command line
-      vim.schedule(function()
-        vim.cmd('echo ""')
-      end)
     end
   end
 end
