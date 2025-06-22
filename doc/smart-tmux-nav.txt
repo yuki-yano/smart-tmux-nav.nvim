@@ -1,0 +1,247 @@
+*smart-tmux-nav.txt*  Seamless tmux and Neovim navigation
+
+==============================================================================
+CONTENTS                                            *smart-tmux-nav-contents*
+
+    1. Introduction .......................... |smart-tmux-nav-introduction|
+    2. Requirements .......................... |smart-tmux-nav-requirements|
+    3. Installation .......................... |smart-tmux-nav-installation|
+    4. Setup ................................. |smart-tmux-nav-setup|
+    5. Configuration ......................... |smart-tmux-nav-configuration|
+    6. Commands .............................. |smart-tmux-nav-commands|
+    7. API ................................... |smart-tmux-nav-api|
+    8. Troubleshooting ....................... |smart-tmux-nav-troubleshooting|
+
+==============================================================================
+INTRODUCTION                                    *smart-tmux-nav-introduction*
+
+smart-tmux-nav.nvim provides seamless navigation between tmux panes and
+Neovim windows with cursor awareness. When switching from a tmux pane to
+Neovim, it intelligently selects the Neovim window that best matches your
+cursor position.
+
+Features:
+- Seamless navigation between tmux panes and Neovim windows
+- Cursor-aware window selection
+- Cycle support (wrap around at edges)
+- Zero configuration with sensible defaults
+- Fully customizable
+
+==============================================================================
+REQUIREMENTS                                    *smart-tmux-nav-requirements*
+
+- Neovim >= 0.7.0
+- tmux >= 2.0
+- bash (for the tmux navigation script)
+
+==============================================================================
+INSTALLATION                                    *smart-tmux-nav-installation*
+
+Using lazy.nvim:
+>lua
+    {
+      'yuki-yano/smart-tmux-nav.nvim',
+      lazy = false,
+      build = './install.sh',
+      config = function()
+        require('smart-tmux-nav').setup()
+      end,
+    }
+<
+
+Using packer.nvim:
+>lua
+    use {
+      'yuki-yano/smart-tmux-nav.nvim',
+      config = function()
+        require('smart-tmux-nav').setup()
+      end,
+    }
+<
+
+==============================================================================
+SETUP                                                  *smart-tmux-nav-setup*
+
+This plugin requires two components:
+- The Neovim plugin (installed via your plugin manager)
+- The tmux script `tmux-smart-switch-pane` (needs to be in your PATH)
+
+1. Neovim Configuration
+
+   The plugin works out of the box with default settings. Just call setup:
+>lua
+       require('smart-tmux-nav').setup()
+<
+
+2. Install tmux Script
+
+   Option 1: Automatic Installation (Recommended) ~
+
+   If you're using lazy.nvim with the `build = './install.sh'` option, the
+   script will be installed automatically. Otherwise, run the install script
+   manually:
+
+>bash
+       cd /path/to/smart-tmux-nav.nvim
+       ./install.sh
+<
+
+   The install script will:
+   - Find or create a suitable directory in your PATH
+   - Copy the tmux script to that directory
+   - Make it executable
+   - Show you the tmux configuration to add
+
+   Option 2: Manual Installation ~
+
+   If you prefer to install manually:
+
+>bash
+       cp /path/to/smart-tmux-nav.nvim/bin/tmux-smart-switch-pane ~/.local/bin/
+       chmod +x ~/.local/bin/tmux-smart-switch-pane
+<
+
+3. tmux Configuration
+
+   Add to your ~/.tmux.conf:
+>bash
+       # Smart pane switching with awareness of Neovim
+       bind -n C-h if -F "#{pane_current_command} =~ '(n?vim?)'" \
+         "send-keys C-h" \
+         "run-shell 'tmux-smart-switch-pane left'"
+       
+       bind -n C-j if -F "#{pane_current_command} =~ '(n?vim?)'" \
+         "send-keys C-j" \
+         "run-shell 'tmux-smart-switch-pane down'"
+       
+       bind -n C-k if -F "#{pane_current_command} =~ '(n?vim?)'" \
+         "send-keys C-k" \
+         "run-shell 'tmux-smart-switch-pane up'"
+       
+       bind -n C-l if -F "#{pane_current_command} =~ '(n?vim?)'" \
+         "send-keys C-l" \
+         "run-shell 'tmux-smart-switch-pane right'"
+<
+
+   After adding the configuration, reload tmux:
+>bash
+       tmux source-file ~/.tmux.conf
+<
+
+==============================================================================
+CONFIGURATION                                  *smart-tmux-nav-configuration*
+
+Default configuration:
+>lua
+    require('smart-tmux-nav').setup({
+      -- Enable the plugin
+      enable = true,
+      
+      -- Custom keybindings (set to false to disable default mappings)
+      keybindings = {
+        left = '<C-h>',
+        down = '<C-j>',
+        up = '<C-k>',
+        right = '<C-l>',
+      },
+      
+      -- Modes for keybindings
+      modes = { 'n', 't' },
+      
+      -- Enable debug mode
+      debug = false,
+    })
+<
+
+                                            *smart-tmux-nav-config.enable*
+enable                      boolean (default: true)
+    Enable or disable the plugin.
+
+                                        *smart-tmux-nav-config.keybindings*
+keybindings                 table|false (default: see above)
+    Table of keybindings for each direction. Set to false to disable
+    default mappings and set up your own.
+
+                                             *smart-tmux-nav-config.modes*
+modes                       table (default: {'n', 't'})
+    Modes in which the keybindings are active.
+
+                                             *smart-tmux-nav-config.debug*
+debug                       boolean (default: false)
+    Enable debug logging.
+
+==============================================================================
+COMMANDS                                            *smart-tmux-nav-commands*
+
+                                                        *:TmuxSelectWindow*
+:TmuxSelectWindow {args}
+    Internal command used by tmux integration. You shouldn't need to use
+    this directly.
+
+==============================================================================
+API                                                      *smart-tmux-nav-api*
+
+                                                  *smart-tmux-nav.setup()*
+smart-tmux-nav.setup({config})
+    Initialize the plugin with the given configuration.
+
+    Parameters: ~
+        {config}  (table|nil)  Configuration table
+
+                                               *smart-tmux-nav.navigate()*
+smart-tmux-nav.navigate({direction})
+    Navigate in the specified direction.
+
+    Parameters: ~
+        {direction}  (string)  Direction: 'h', 'j', 'k', or 'l'
+
+    Example: >lua
+        require('smart-tmux-nav').navigate('h')  -- Navigate left
+<
+
+                                              *smart-tmux-nav.get_config()*
+smart-tmux-nav.get_config()
+    Get the current configuration.
+
+    Returns: ~
+        (table)  Current configuration
+
+==============================================================================
+TROUBLESHOOTING                              *smart-tmux-nav-troubleshooting*
+
+Script Not Found ~
+
+If you get an error about tmux-smart-switch-pane not being found:
+
+1. Check if the script exists:
+>bash
+       find /path/to/nvim/plugins -name "tmux-smart-switch-pane" 2>/dev/null
+<
+
+2. Copy it to your PATH:
+>bash
+       cp /path/to/smart-tmux-nav.nvim/bin/tmux-smart-switch-pane ~/.local/bin/
+       chmod +x ~/.local/bin/tmux-smart-switch-pane
+<
+
+Navigation Not Working ~
+
+1. Check that the plugin is loaded:
+>vim
+       :lua print(vim.g.loaded_smart_tmux_nav)
+<
+
+2. Enable debug mode:
+>lua
+       require('smart-tmux-nav').setup({ debug = true })
+<
+
+3. Verify tmux version (should be >= 2.0):
+>bash
+       tmux -V
+<
+
+4. Ensure tmux key bindings are properly configured in ~/.tmux.conf
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
