@@ -1,23 +1,26 @@
 # smart-tmux-nav.nvim
 
-Seamless navigation between tmux panes and Neovim windows with cursor awareness.
+Seamless navigation between tmux panes and Neovim/Vim windows with cursor awareness.
 
 ## Features
 
-- **Seamless Navigation**: Use the same keybindings to navigate between tmux panes and Neovim windows
-- **Cursor-Aware**: When switching from tmux to Neovim, selects the window that best matches your cursor position
+- **Seamless Navigation**: Use the same keybindings to navigate between tmux panes and Neovim/Vim windows
+- **Cursor-Aware**: When switching from tmux to Neovim/Vim, selects the window that best matches your cursor position
 - **Cycle Support**: Navigate through panes in a cycle - when you reach an edge, wrap around to the opposite side
 - **Customizable**: Configure keybindings, debug mode, and more
+- **Vim Compatible**: Works with both Neovim and Vim (using the vim-script-port branch)
 
 ## Requirements
 
-- Neovim >= 0.7.0
+- Neovim >= 0.7.0 OR Vim >= 8.0 (with +eval feature)
 - tmux >= 2.0
 - bash (for the tmux script)
 
 ## Installation
 
-### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
+### For Neovim
+
+#### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 {
@@ -30,17 +33,40 @@ Seamless navigation between tmux panes and Neovim windows with cursor awareness.
 }
 ```
 
+### For Vim
+
+#### Using vim-plug
+
+```vim
+Plug 'yuki-yano/smart-tmux-nav.nvim', { 'branch': 'vim-script-port', 'do': './install.sh' }
+```
+
+#### Using Vundle
+
+```vim
+Plugin 'yuki-yano/smart-tmux-nav.nvim'
+" After installation, run: ./install.sh from the plugin directory
+```
+
+#### Manual Installation
+
+```bash
+git clone -b vim-script-port https://github.com/yuki-yano/smart-tmux-nav.nvim.git ~/.vim/pack/plugins/start/smart-tmux-nav
+cd ~/.vim/pack/plugins/start/smart-tmux-nav
+./install.sh
+```
+
 ## Setup
 
 This plugin requires two components:
-1. The Neovim plugin (installed via your plugin manager)
+1. The Neovim/Vim plugin (installed via your plugin manager)
 2. The tmux script `tmux-smart-switch-pane` (needs to be in your PATH)
 
 ### Installing the tmux script
 
 #### Option 1: Automatic Installation (Recommended)
 
-If you're using lazy.nvim with the `build = './install.sh'` option, the script will be installed automatically. Otherwise, you can run the install script manually:
+If you're using a plugin manager with the `build`/`do` option, the script will be installed automatically. Otherwise, you can run the install script manually:
 
 ```bash
 cd /path/to/smart-tmux-nav.nvim
@@ -72,7 +98,7 @@ sudo chmod +x /usr/local/bin/tmux-smart-switch-pane
 Add the following to your `~/.tmux.conf`:
 
 ```bash
-# Smart pane switching with awareness of Neovim
+# Smart pane switching with awareness of Neovim/Vim
 bind -n C-h if -F "#{pane_current_command} =~ '(n?vim?)'" \
   "send-keys C-h" \
   "run-shell 'tmux-smart-switch-pane left'"
@@ -98,7 +124,7 @@ tmux source-file ~/.tmux.conf
 
 ## Configuration
 
-### Default Configuration
+### Neovim Configuration
 
 ```lua
 require('smart-tmux-nav').setup({
@@ -121,9 +147,31 @@ require('smart-tmux-nav').setup({
 })
 ```
 
+### Vim Configuration
+
+Add to your `.vimrc`:
+
+```vim
+" Initialize with default settings
+call smart_tmux_nav#setup()
+
+" Or with custom settings
+call smart_tmux_nav#setup({
+  \ 'enable': 1,
+  \ 'keybindings': {
+  \   'left': '<C-h>',
+  \   'down': '<C-j>',
+  \   'up': '<C-k>',
+  \   'right': '<C-l>',
+  \ },
+  \ 'modes': ['n', 't'],
+  \ 'debug': 0,
+\ })
+```
+
 ### Disable Default Keybindings
 
-If you want to set up your own keybindings:
+#### Neovim
 
 ```lua
 require('smart-tmux-nav').setup({
@@ -137,9 +185,23 @@ vim.keymap.set('n', '<M-k>', function() require('smart-tmux-nav').navigate('k') 
 vim.keymap.set('n', '<M-l>', function() require('smart-tmux-nav').navigate('l') end)
 ```
 
+#### Vim
+
+```vim
+call smart_tmux_nav#setup({'keybindings': 0})
+
+" Set up custom keybindings
+nnoremap <silent> <M-h> :call smart_tmux_nav#navigate('h')<CR>
+nnoremap <silent> <M-j> :call smart_tmux_nav#navigate('j')<CR>
+nnoremap <silent> <M-k> :call smart_tmux_nav#navigate('k')<CR>
+nnoremap <silent> <M-l> :call smart_tmux_nav#navigate('l')<CR>
+```
+
 ### Debug Mode
 
 Enable debug mode to see what's happening:
+
+#### Neovim
 
 ```lua
 require('smart-tmux-nav').setup({
@@ -147,12 +209,18 @@ require('smart-tmux-nav').setup({
 })
 ```
 
+#### Vim
+
+```vim
+call smart_tmux_nav#setup({'debug': 1})
+```
+
 ## How It Works
 
-1. **Within Neovim**: When you press a navigation key (e.g., `<C-h>`), the plugin checks if you're at a window edge
+1. **Within Neovim/Vim**: When you press a navigation key (e.g., `<C-h>`), the plugin checks if you're at a window edge
 2. **At Window Edge**: If at an edge, it calls the tmux script to switch panes
 3. **Cursor Awareness**: The tmux script records your cursor position and finds the best matching pane
-4. **Window Selection**: When entering a Neovim pane, it selects the window that best matches your previous cursor position
+4. **Window Selection**: When entering a Neovim/Vim pane, it selects the window that best matches your previous cursor position
 
 ## Troubleshooting
 
@@ -174,16 +242,23 @@ If you get an error about `tmux-smart-switch-pane` not being found:
 ### Navigation Not Working
 
 1. Ensure tmux key bindings are properly configured
-2. Check that the plugin is loaded: `:lua print(vim.g.loaded_smart_tmux_nav)`
+2. Check that the plugin is loaded:
+   - Neovim: `:lua print(vim.g.loaded_smart_tmux_nav)`
+   - Vim: `:echo g:loaded_smart_tmux_nav`
 3. Enable debug mode to see what's happening
 4. Verify tmux version: `tmux -V` (should be >= 2.0)
 
 ## API
 
-### Functions
+### Neovim Functions
 
 - `require('smart-tmux-nav').setup(config)` - Initialize the plugin with configuration
 - `require('smart-tmux-nav').navigate(direction)` - Navigate in the given direction ('h', 'j', 'k', 'l')
+
+### Vim Functions
+
+- `smart_tmux_nav#setup(config)` - Initialize the plugin with configuration
+- `smart_tmux_nav#navigate(direction)` - Navigate in the given direction ('h', 'j', 'k', 'l')
 
 ## License
 
