@@ -14,10 +14,3 @@ function! smart_tmux_nav#tmux#setup(config) abort
     autocmd FocusGained * call smart_tmux_nav#navigation#process_tmux_window_selection()
   augroup END
 endfunction
-
-" Handle TmuxSelectWindow command (deprecated)
-function! smart_tmux_nav#tmux#select_window(args) abort
-  " This command is handled by FocusGained event now
-  " Clear any command line output
-  echo ""
-endfunction

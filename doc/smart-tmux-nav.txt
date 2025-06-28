@@ -131,20 +131,20 @@ This plugin requires two components:
 
    Add to your ~/.tmux.conf:
 >bash
-       # Smart pane switching with awareness of Neovim/Vim
-       bind -n C-h if -F "#{pane_current_command} =~ '(n?vim?)'" \
+       # Smart pane switching with awareness of Vim
+       bind -n C-h if -F "#{==:#{pane_current_command},vim}" \
          "send-keys C-h" \
          "run-shell 'tmux-smart-switch-pane left'"
        
-       bind -n C-j if -F "#{pane_current_command} =~ '(n?vim?)'" \
+       bind -n C-j if -F "#{==:#{pane_current_command},vim}" \
          "send-keys C-j" \
          "run-shell 'tmux-smart-switch-pane down'"
        
-       bind -n C-k if -F "#{pane_current_command} =~ '(n?vim?)'" \
+       bind -n C-k if -F "#{==:#{pane_current_command},vim}" \
          "send-keys C-k" \
          "run-shell 'tmux-smart-switch-pane up'"
        
-       bind -n C-l if -F "#{pane_current_command} =~ '(n?vim?)'" \
+       bind -n C-l if -F "#{==:#{pane_current_command},vim}" \
          "send-keys C-l" \
          "run-shell 'tmux-smart-switch-pane right'"
 <
@@ -198,10 +198,8 @@ g:smart_tmux_nav_debug      number (default: 0)
 ==============================================================================
 COMMANDS                                            *smart-tmux-nav-commands*
 
-                                                        *:TmuxSelectWindow*
-:TmuxSelectWindow {args}
-    Internal command used by tmux integration. You shouldn't need to use
-    this directly.
+This plugin doesn't provide any user-facing commands. All navigation is done
+through the mappings described in |smart-tmux-nav-api|.
 
 ==============================================================================
 API                                                      *smart-tmux-nav-api*

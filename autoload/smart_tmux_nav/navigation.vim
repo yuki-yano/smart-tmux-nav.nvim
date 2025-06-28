@@ -376,7 +376,7 @@ function! s:select_window_by_cursor_position(cursor_y_percent, cursor_x_percent,
   endfor
 
   " If no exact match, use the closest window
-  if best_window
+  if best_window > 0
     execute best_window . 'wincmd w'
   endif
 endfunction

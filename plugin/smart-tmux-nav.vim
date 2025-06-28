@@ -23,6 +23,3 @@ if has('terminal')
   tnoremap <silent> <Plug>SmartTmuxNavUp    <C-\><C-N>:<C-U>call smart_tmux_nav#navigate('k')<CR>
   tnoremap <silent> <Plug>SmartTmuxNavRight <C-\><C-N>:<C-U>call smart_tmux_nav#navigate('l')<CR>
 endif
-
-" Commands
-command! -nargs=1 TmuxSelectWindow call smart_tmux_nav#tmux#select_window(<f-args>)

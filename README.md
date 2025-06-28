@@ -48,14 +48,14 @@ This plugin requires two components:
 
 #### Option 1: Automatic Installation (Recommended)
 
-If you're using a plugin manager with the `build`/`do` option, the script will be installed automatically. Otherwise, you can run the install script manually:
+If you're using a plugin manager with the `build`/`do` option, the script will be installed automatically. Otherwise, you can run the installation script manually:
 
 ```bash
 cd /path/to/smart-tmux-nav.vim
 ./install.sh
 ```
 
-The install script will:
+The installation script will:
 - Find or create a suitable directory in your PATH (~/.local/bin or ~/bin)
 - Copy the tmux script to that directory
 - Make it executable
@@ -81,19 +81,19 @@ Add the following to your `~/.tmux.conf`:
 
 ```bash
 # Smart pane switching with awareness of Vim
-bind -n C-h if -F "#{pane_current_command} =~ 'vim'" \
+bind -n C-h if -F "#{==:#{pane_current_command},vim}" \
   "send-keys C-h" \
   "run-shell 'tmux-smart-switch-pane left'"
 
-bind -n C-j if -F "#{pane_current_command} =~ 'vim'" \
+bind -n C-j if -F "#{==:#{pane_current_command},vim}" \
   "send-keys C-j" \
   "run-shell 'tmux-smart-switch-pane down'"
 
-bind -n C-k if -F "#{pane_current_command} =~ 'vim'" \
+bind -n C-k if -F "#{==:#{pane_current_command},vim}" \
   "send-keys C-k" \
   "run-shell 'tmux-smart-switch-pane up'"
 
-bind -n C-l if -F "#{pane_current_command} =~ 'vim'" \
+bind -n C-l if -F "#{==:#{pane_current_command},vim}" \
   "send-keys C-l" \
   "run-shell 'tmux-smart-switch-pane right'"
 ```
