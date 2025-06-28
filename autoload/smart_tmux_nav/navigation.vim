@@ -185,6 +185,76 @@ function! s:is_horizontal_layout(windows) abort
   return 0  " All windows in same column = vertical layout
 endfunction
 
+" Find windows at a specific edge
+function! s:find_edge_windows(windows, edge_type) abort
+  let edge_windows = []
+  let edge_value = (edge_type == 'bottom' || edge_type == 'right') ? -1 : 999999
+  
+  " Find the edge value
+  for win in a:windows
+    let bounds = s:get_window_bounds(win)
+    if edge_type == 'bottom'
+      if bounds.bottom > edge_value
+        let edge_value = bounds.bottom
+      endif
+    elseif edge_type == 'top'
+      if bounds.row < edge_value
+        let edge_value = bounds.row
+      endif
+    elseif edge_type == 'right'
+      if bounds.right > edge_value
+        let edge_value = bounds.right
+      endif
+    elseif edge_type == 'left'
+      if bounds.col < edge_value
+        let edge_value = bounds.col
+      endif
+    endif
+  endfor
+  
+  " Get all windows at the edge
+  for win in a:windows
+    let bounds = s:get_window_bounds(win)
+    if edge_type == 'bottom' && bounds.bottom == edge_value
+      call add(edge_windows, win)
+    elseif edge_type == 'top' && bounds.row == edge_value
+      call add(edge_windows, win)
+    elseif edge_type == 'right' && bounds.right == edge_value
+      call add(edge_windows, win)
+    elseif edge_type == 'left' && bounds.col == edge_value
+      call add(edge_windows, win)
+    endif
+  endfor
+  
+  return edge_windows
+endfunction
+
+" Select the best aligned window from candidates based on position
+function! s:select_best_aligned_window(candidates, target_pos, align_axis) abort
+  if empty(a:candidates)
+    return 0
+  endif
+  
+  let best_win = a:candidates[0]
+  let best_distance = 999999
+  
+  for win in a:candidates
+    let bounds = s:get_window_bounds(win)
+    if a:align_axis == 'horizontal'
+      let distance = abs((bounds.col + bounds.width / 2) - a:target_pos)
+    else  " vertical
+      let distance = abs((bounds.row + bounds.height / 2) - a:target_pos)
+    endif
+    
+    if distance < best_distance
+      let best_distance = distance
+      let best_win = win
+    endif
+  endfor
+  
+  return best_win
+endfunction
+
 " Find the best window based on cursor position and direction
 function! s:select_window_by_cursor_position(cursor_y_percent, cursor_x_percent, direction, is_cycle) abort
   let windows = s:get_normal_windows()
@@ -204,143 +274,40 @@ function! s:select_window_by_cursor_position(cursor_y_percent, cursor_x_percent,
     let target_row = float2nr(a:cursor_y_percent * total_height / 100.0)
     let target_col = float2nr(a:cursor_x_percent * total_width / 100.0)
 
+    let edge_type = ''
+    let target_pos = 0
+    let align_axis = ''
+    
     if a:direction == 'U'
       " Cycling up: select bottommost window that aligns with cursor X
-      let candidates = []
-      let max_bottom = -1
-
-      " Find the bottommost row
-      for win in windows
-        let bounds = s:get_window_bounds(win)
-        if bounds.bottom > max_bottom
-          let max_bottom = bounds.bottom
-        endif
-      endfor
-
-      " Get all windows at the bottom
-      for win in windows
-        let bounds = s:get_window_bounds(win)
-        if bounds.bottom == max_bottom
-          call add(candidates, win)
-        endif
-      endfor
-
-      " Select the one that best matches cursor X position
-      let best_win = candidates[0]
-      let best_distance = 999999
-      for win in candidates
-        let bounds = s:get_window_bounds(win)
-        let distance = abs((bounds.col + bounds.width / 2) - target_col)
-        if distance < best_distance
-          let best_distance = distance
-          let best_win = win
-        endif
-      endfor
-      execute best_win . 'wincmd w'
-      return
+      let edge_type = 'bottom'
+      let target_pos = target_col
+      let align_axis = 'horizontal'
     elseif a:direction == 'D'
       " Cycling down: select topmost window that aligns with cursor X
-      let candidates = []
-      let min_top = 999999
-
-      " Find the topmost row
-      for win in windows
-        let bounds = s:get_window_bounds(win)
-        if bounds.row < min_top
-          let min_top = bounds.row
-        endif
-      endfor
-
-      " Get all windows at the top
-      for win in windows
-        let bounds = s:get_window_bounds(win)
-        if bounds.row == min_top
-          call add(candidates, win)
-        endif
-      endfor
-
-      " Select the one that best matches cursor X position
-      let best_win = candidates[0]
-      let best_distance = 999999
-      for win in candidates
-        let bounds = s:get_window_bounds(win)
-        let distance = abs((bounds.col + bounds.width / 2) - target_col)
-        if distance < best_distance
-          let best_distance = distance
-          let best_win = win
-        endif
-      endfor
-      execute best_win . 'wincmd w'
-      return
+      let edge_type = 'top'
+      let target_pos = target_col
+      let align_axis = 'horizontal'
     elseif a:direction == 'L'
       " Cycling left: select rightmost window that aligns with cursor Y
-      let candidates = []
-      let max_right = -1
-
-      " Find the rightmost column
-      for win in windows
-        let bounds = s:get_window_bounds(win)
-        if bounds.right > max_right
-          let max_right = bounds.right
-        endif
-      endfor
-
-      " Get all windows at the right edge
-      for win in windows
-        let bounds = s:get_window_bounds(win)
-        if bounds.right == max_right
-          call add(candidates, win)
-        endif
-      endfor
-
-      " Select the one that best matches cursor Y position
-      let best_win = candidates[0]
-      let best_distance = 999999
-      for win in candidates
-        let bounds = s:get_window_bounds(win)
-        let distance = abs((bounds.row + bounds.height / 2) - target_row)
-        if distance < best_distance
-          let best_distance = distance
-          let best_win = win
-        endif
-      endfor
-      execute best_win . 'wincmd w'
-      return
+      let edge_type = 'right'
+      let target_pos = target_row
+      let align_axis = 'vertical'
     elseif a:direction == 'R'
       " Cycling right: select leftmost window that aligns with cursor Y
-      let candidates = []
-      let min_left = 999999
-
-      " Find the leftmost column
-      for win in windows
-        let bounds = s:get_window_bounds(win)
-        if bounds.col < min_left
-          let min_left = bounds.col
-        endif
-      endfor
-
-      " Get all windows at the left edge
-      for win in windows
-        let bounds = s:get_window_bounds(win)
-        if bounds.col == min_left
-          call add(candidates, win)
-        endif
-      endfor
-
-      " Select the one that best matches cursor Y position
-      let best_win = candidates[0]
-      let best_distance = 999999
-      for win in candidates
-        let bounds = s:get_window_bounds(win)
-        let distance = abs((bounds.row + bounds.height / 2) - target_row)
-        if distance < best_distance
-          let best_distance = distance
-          let best_win = win
-        endif
-      endfor
-      execute best_win . 'wincmd w'
-      return
+      let edge_type = 'left'
+      let target_pos = target_row
+      let align_axis = 'vertical'
     endif
+    
+    " Find windows at the edge and select the best aligned one
+    let candidates = s:find_edge_windows(windows, edge_type)
+    let best_win = s:select_best_aligned_window(candidates, target_pos, align_axis)
+    
+    if best_win > 0
+      execute best_win . 'wincmd w'
+    endif
+    return
   endif
 
   " Normal (non-cycle) movement: use cursor position
