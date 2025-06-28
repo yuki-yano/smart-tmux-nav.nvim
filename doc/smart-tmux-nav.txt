@@ -297,30 +297,24 @@ If you get an error about tmux-smart-switch-pane not being found:
 
 1. Check if the script exists:
 >bash
-       find /path/to/nvim/plugins -name "tmux-smart-switch-pane" 2>/dev/null
+       find ~/.vim -name "tmux-smart-switch-pane" 2>/dev/null
 <
 
 2. Copy it to your PATH:
 >bash
-       cp /path/to/smart-tmux-nav.nvim/bin/tmux-smart-switch-pane ~/.local/bin/
+       cp /path/to/smart-tmux-nav.vim/bin/tmux-smart-switch-pane ~/.local/bin/
        chmod +x ~/.local/bin/tmux-smart-switch-pane
 <
 
 Navigation Not Working ~
 
 1. Check that the plugin is loaded:
-   - Neovim: >vim
-       :lua print(vim.g.loaded_smart_tmux_nav)
-<
-   - Vim: >vim
+>vim
        :echo g:loaded_smart_tmux_nav
 <
 
 2. Enable debug mode:
-   - Neovim: >lua
-       require('smart-tmux-nav').setup({ debug = true })
-<
-   - Vim: >vim
+>vim
        call smart_tmux_nav#setup({'debug': 1})
 <
 
