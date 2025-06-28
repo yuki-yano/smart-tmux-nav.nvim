@@ -109,41 +109,40 @@ tmux source-file ~/.tmux.conf
 Add to your `.vimrc`:
 
 ```vim
-" Initialize with default settings
-call smart_tmux_nav#setup()
+" Map using the provided <Plug> mappings
+nmap <C-h> <Plug>SmartTmuxNavLeft
+nmap <C-j> <Plug>SmartTmuxNavDown
+nmap <C-k> <Plug>SmartTmuxNavUp
+nmap <C-l> <Plug>SmartTmuxNavRight
 
-" Or with custom settings
-call smart_tmux_nav#setup({
-  \ 'enable': 1,
-  \ 'keybindings': {
-  \   'left': '<C-h>',
-  \   'down': '<C-j>',
-  \   'up': '<C-k>',
-  \   'right': '<C-l>',
-  \ },
-  \ 'modes': ['n', 't'],
-  \ 'debug': 0,
-\ })
+" If you have terminal mode and want to use it there too
+if has('terminal')
+  tmap <C-h> <Plug>SmartTmuxNavLeft
+  tmap <C-j> <Plug>SmartTmuxNavDown
+  tmap <C-k> <Plug>SmartTmuxNavUp
+  tmap <C-l> <Plug>SmartTmuxNavRight
+endif
 ```
 
-### Disable Default Keybindings
+### Custom Keybindings
+
+You can map to any keys you prefer:
 
 ```vim
-call smart_tmux_nav#setup({'keybindings': 0})
-
-" Set up custom keybindings
-nnoremap <silent> <M-h> :call smart_tmux_nav#navigate('h')<CR>
-nnoremap <silent> <M-j> :call smart_tmux_nav#navigate('j')<CR>
-nnoremap <silent> <M-k> :call smart_tmux_nav#navigate('k')<CR>
-nnoremap <silent> <M-l> :call smart_tmux_nav#navigate('l')<CR>
+" Example with Meta/Alt keys
+nmap <M-h> <Plug>SmartTmuxNavLeft
+nmap <M-j> <Plug>SmartTmuxNavDown
+nmap <M-k> <Plug>SmartTmuxNavUp
+nmap <M-l> <Plug>SmartTmuxNavRight
 ```
 
 ### Debug Mode
 
-Enable debug mode to see what's happening:
+Enable debug mode by setting a global variable:
 
 ```vim
-call smart_tmux_nav#setup({'debug': 1})
+" Enable debug logging
+let g:smart_tmux_nav_debug = 1
 ```
 
 ## How It Works
@@ -179,8 +178,22 @@ If you get an error about `tmux-smart-switch-pane` not being found:
 
 ## API
 
-- `smart_tmux_nav#setup(config)` - Initialize the plugin with configuration
+### Mappings
+
+The plugin provides the following `<Plug>` mappings:
+
+- `<Plug>SmartTmuxNavLeft` - Navigate left
+- `<Plug>SmartTmuxNavDown` - Navigate down
+- `<Plug>SmartTmuxNavUp` - Navigate up
+- `<Plug>SmartTmuxNavRight` - Navigate right
+
+### Functions
+
 - `smart_tmux_nav#navigate(direction)` - Navigate in the given direction ('h', 'j', 'k', 'l')
+
+### Variables
+
+- `g:smart_tmux_nav_debug` - Enable debug logging (default: 0)
 
 ## License
 

@@ -86,24 +86,20 @@ Manual Installation:
 SETUP                                                  *smart-tmux-nav-setup*
 
 This plugin requires two components:
-- The Neovim/Vim plugin (installed via your plugin manager)
+- The Vim plugin (installed via your plugin manager)
 - The tmux script `tmux-smart-switch-pane` (needs to be in your PATH)
 
-1. Neovim Configuration ~
+1. Vim Configuration ~
 
-   The plugin works out of the box with default settings. Just call setup:
->lua
-       require('smart-tmux-nav').setup()
-<
-
-2. Vim Configuration ~
-
-   Add to your .vimrc:
+   The plugin loads automatically. Add keybindings to your .vimrc:
 >vim
-       call smart_tmux_nav#setup()
+       nmap <C-h> <Plug>SmartTmuxNavLeft
+       nmap <C-j> <Plug>SmartTmuxNavDown
+       nmap <C-k> <Plug>SmartTmuxNavUp
+       nmap <C-l> <Plug>SmartTmuxNavRight
 <
 
-3. Install tmux Script ~
+2. Install tmux Script ~
 
    Option 1: Automatic Installation (Recommended) ~
 
@@ -112,7 +108,7 @@ This plugin requires two components:
    manually:
 
 >bash
-       cd /path/to/smart-tmux-nav.nvim
+       cd /path/to/smart-tmux-nav.vim
        ./install.sh
 <
 
@@ -131,7 +127,7 @@ This plugin requires two components:
        chmod +x ~/.local/bin/tmux-smart-switch-pane
 <
 
-4. tmux Configuration ~
+3. tmux Configuration ~
 
    Add to your ~/.tmux.conf:
 >bash
@@ -161,63 +157,43 @@ This plugin requires two components:
 ==============================================================================
 CONFIGURATION                                  *smart-tmux-nav-configuration*
 
-Neovim Configuration ~
+Keybindings ~
 
-Default configuration:
->lua
-    require('smart-tmux-nav').setup({
-      -- Enable the plugin
-      enable = true,
-      
-      -- Custom keybindings (set to false to disable default mappings)
-      keybindings = {
-        left = '<C-h>',
-        down = '<C-j>',
-        up = '<C-k>',
-        right = '<C-l>',
-      },
-      
-      -- Modes for keybindings
-      modes = { 'n', 't' },
-      
-      -- Enable debug mode
-      debug = false,
-    })
-<
-
-Vim Configuration ~
-
-Default configuration:
+The plugin provides <Plug> mappings that you need to map to your preferred
+keys. Add to your .vimrc:
 >vim
-    call smart_tmux_nav#setup({
-      \ 'enable': 1,
-      \ 'keybindings': {
-      \   'left': '<C-h>',
-      \   'down': '<C-j>',
-      \   'up': '<C-k>',
-      \   'right': '<C-l>',
-      \ },
-      \ 'modes': ['n', 't'],
-      \ 'debug': 0,
-    \ })
+    nmap <C-h> <Plug>SmartTmuxNavLeft
+    nmap <C-j> <Plug>SmartTmuxNavDown
+    nmap <C-k> <Plug>SmartTmuxNavUp
+    nmap <C-l> <Plug>SmartTmuxNavRight
 <
 
-                                            *smart-tmux-nav-config.enable*
-enable                      boolean/number (default: true/1)
-    Enable or disable the plugin.
+For terminal mode support:
+>vim
+    if has('terminal')
+      tmap <C-h> <Plug>SmartTmuxNavLeft
+      tmap <C-j> <Plug>SmartTmuxNavDown
+      tmap <C-k> <Plug>SmartTmuxNavUp
+      tmap <C-l> <Plug>SmartTmuxNavRight
+    endif
+<
 
-                                        *smart-tmux-nav-config.keybindings*
-keybindings                 table/dict|false/0 (default: see above)
-    Table of keybindings for each direction. Set to false/0 to disable
-    default mappings and set up your own.
+Custom Keybindings ~
 
-                                             *smart-tmux-nav-config.modes*
-modes                       table/list (default: {'n', 't'}/['n', 't'])
-    Modes in which the keybindings are active.
+You can map to any keys you prefer:
+>vim
+    " Example with Meta/Alt keys
+    nmap <M-h> <Plug>SmartTmuxNavLeft
+    nmap <M-j> <Plug>SmartTmuxNavDown
+    nmap <M-k> <Plug>SmartTmuxNavUp
+    nmap <M-l> <Plug>SmartTmuxNavRight
+<
 
-                                             *smart-tmux-nav-config.debug*
-debug                       boolean/number (default: false/0)
-    Enable debug logging.
+Configuration Variables ~
+
+                                            *g:smart_tmux_nav_debug*
+g:smart_tmux_nav_debug      number (default: 0)
+    Enable debug logging. Set to 1 to enable debug messages.
 
 ==============================================================================
 COMMANDS                                            *smart-tmux-nav-commands*
@@ -230,46 +206,24 @@ COMMANDS                                            *smart-tmux-nav-commands*
 ==============================================================================
 API                                                      *smart-tmux-nav-api*
 
-Neovim API ~
+Mappings ~
+                                               *<Plug>SmartTmuxNavLeft*
+<Plug>SmartTmuxNavLeft
+    Navigate to the window or tmux pane on the left.
 
-                                                  *smart-tmux-nav.setup()*
-smart-tmux-nav.setup({config})
-    Initialize the plugin with the given configuration.
+                                               *<Plug>SmartTmuxNavDown*
+<Plug>SmartTmuxNavDown
+    Navigate to the window or tmux pane below.
 
-    Parameters: ~
-        {config}  (table|nil)  Configuration table
+                                               *<Plug>SmartTmuxNavUp*
+<Plug>SmartTmuxNavUp
+    Navigate to the window or tmux pane above.
 
-                                               *smart-tmux-nav.navigate()*
-smart-tmux-nav.navigate({direction})
-    Navigate in the specified direction.
+                                               *<Plug>SmartTmuxNavRight*
+<Plug>SmartTmuxNavRight
+    Navigate to the window or tmux pane on the right.
 
-    Parameters: ~
-        {direction}  (string)  Direction: 'h', 'j', 'k', or 'l'
-
-    Example: >lua
-        require('smart-tmux-nav').navigate('h')  -- Navigate left
-<
-
-                                              *smart-tmux-nav.get_config()*
-smart-tmux-nav.get_config()
-    Get the current configuration.
-
-    Returns: ~
-        (table)  Current configuration
-
-Vim API ~
-
-                                               *smart_tmux_nav#setup()*
-smart_tmux_nav#setup([{config}])
-    Initialize the plugin with the given configuration.
-
-    Parameters: ~
-        {config}  (dict|optional)  Configuration dictionary
-
-    Example: >vim
-        call smart_tmux_nav#setup({'debug': 1})
-<
-
+Functions ~
                                             *smart_tmux_nav#navigate()*
 smart_tmux_nav#navigate({direction})
     Navigate in the specified direction.
@@ -280,13 +234,6 @@ smart_tmux_nav#navigate({direction})
     Example: >vim
         call smart_tmux_nav#navigate('h')  " Navigate left
 <
-
-                                           *smart_tmux_nav#get_config()*
-smart_tmux_nav#get_config()
-    Get the current configuration.
-
-    Returns: ~
-        (dict)  Current configuration
 
 ==============================================================================
 TROUBLESHOOTING                              *smart-tmux-nav-troubleshooting*
@@ -315,7 +262,7 @@ Navigation Not Working ~
 
 2. Enable debug mode:
 >vim
-       call smart_tmux_nav#setup({'debug': 1})
+       let g:smart_tmux_nav_debug = 1
 <
 
 3. Verify tmux version (should be >= 2.0):

@@ -8,9 +8,6 @@ let g:loaded_smart_tmux_nav_tmux = 1
 
 " Setup tmux-specific commands and autocmds
 function! smart_tmux_nav#tmux#setup(config) abort
-  " Command for tmux to call when switching to Vim pane
-  command! -nargs=1 TmuxSelectWindow call s:tmux_select_window(<f-args>)
-
   " Auto-check for window selection on focus
   augroup SmartTmuxNavigation
     autocmd!
@@ -19,7 +16,7 @@ function! smart_tmux_nav#tmux#setup(config) abort
 endfunction
 
 " Handle TmuxSelectWindow command (deprecated)
-function! s:tmux_select_window(args) abort
+function! smart_tmux_nav#tmux#select_window(args) abort
   " This command is handled by FocusGained event now
   " Clear any command line output
   echo ""

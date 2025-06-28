@@ -7,20 +7,22 @@ if exists('g:loaded_smart_tmux_nav')
 endif
 let g:loaded_smart_tmux_nav = 1
 
-" Defer setup to allow user configuration
-function! s:auto_setup() abort
-  " Only auto-setup if user hasn't called setup manually
-  if !exists('g:smart_tmux_nav_configured')
-    call smart_tmux_nav#setup()
-  endif
-endfunction
+" Initialize the plugin (without automatic keybindings)
+call smart_tmux_nav#init()
 
-" Check if VimEnter has already fired (for lazy-loaded plugins)
-if v:vim_did_enter
-  call timer_start(0, {-> s:auto_setup()})
-else
-  augroup SmartTmuxNavSetup
-    autocmd!
-    autocmd VimEnter * call s:auto_setup()
-  augroup END
+" Define <Plug> mappings
+nnoremap <silent> <Plug>SmartTmuxNavLeft  :<C-U>call smart_tmux_nav#navigate('h')<CR>
+nnoremap <silent> <Plug>SmartTmuxNavDown  :<C-U>call smart_tmux_nav#navigate('j')<CR>
+nnoremap <silent> <Plug>SmartTmuxNavUp    :<C-U>call smart_tmux_nav#navigate('k')<CR>
+nnoremap <silent> <Plug>SmartTmuxNavRight :<C-U>call smart_tmux_nav#navigate('l')<CR>
+
+" Terminal mode mappings
+if has('terminal')
+  tnoremap <silent> <Plug>SmartTmuxNavLeft  <C-\><C-N>:<C-U>call smart_tmux_nav#navigate('h')<CR>
+  tnoremap <silent> <Plug>SmartTmuxNavDown  <C-\><C-N>:<C-U>call smart_tmux_nav#navigate('j')<CR>
+  tnoremap <silent> <Plug>SmartTmuxNavUp    <C-\><C-N>:<C-U>call smart_tmux_nav#navigate('k')<CR>
+  tnoremap <silent> <Plug>SmartTmuxNavRight <C-\><C-N>:<C-U>call smart_tmux_nav#navigate('l')<CR>
 endif
+
+" Commands
+command! -nargs=1 TmuxSelectWindow call smart_tmux_nav#tmux#select_window(<f-args>)
