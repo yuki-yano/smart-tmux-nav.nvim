@@ -13,6 +13,7 @@ local M = {}
 ---@field modes? string[] Modes for keybindings (default: {'n', 't'})
 ---@field debug? boolean Enable debug mode (default: false)
 ---@field disable_when_floating? boolean Disable auto-focus when coming from a floating window (default: true)
+---@field navigate_from_floating? boolean Navigate directly to tmux pane from floating window (default: true)
 
 -- Default configuration
 local default_config = {
@@ -31,6 +32,8 @@ local default_config = {
   debug = false,
   -- Disable auto-focus when coming from a floating window
   disable_when_floating = true,
+  -- Navigate directly to tmux pane from floating window
+  navigate_from_floating = true,
 }
 
 -- Current configuration

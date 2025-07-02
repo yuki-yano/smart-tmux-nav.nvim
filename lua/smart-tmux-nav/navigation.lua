@@ -342,6 +342,29 @@ function M.in_tmux()
   return state.in_tmux
 end
 
+-- Helper function to navigate to tmux
+local function navigate_to_tmux(direction)
+  local tmux_direction = DIRECTION_MAP[direction]
+  if tmux_direction then
+    -- Check if tmux script is available
+    if not check_tmux_script() then
+      vim.notify(
+        'smart-tmux-nav: tmux-smart-switch-pane not found in PATH!\n'
+          .. 'Please run the install script or manually copy the script to your PATH.\n'
+          .. 'See :help smart-tmux-nav-installation for details.',
+        vim.log.levels.ERROR
+      )
+      return
+    end
+
+    debug_log('Calling tmux script: tmux-smart-switch-pane %s', tmux_direction)
+    local result = vim.fn.system('tmux-smart-switch-pane ' .. tmux_direction)
+    if vim.v.shell_error ~= 0 then
+      vim.notify(string.format('tmux navigation failed: %s', result), vim.log.levels.ERROR)
+    end
+  end
+end
+
 -- Public: Main navigation function
 function M.navigate(direction)
   debug_log('Navigate called with direction: %s', direction)
@@ -352,27 +375,22 @@ function M.navigate(direction)
     return
   end
 
+  -- Check if current window is floating and should navigate to tmux
+  if state.config.navigate_from_floating then
+    local current_win = vim.api.nvim_get_current_win()
+    local win_config = vim.api.nvim_win_get_config(current_win)
+    
+    if win_config.relative ~= '' then
+      debug_log('In floating window, navigating directly to tmux')
+      navigate_to_tmux(direction)
+      return
+    end
+  end
+
   -- At window edge: delegate to tmux
   if is_at_edge(direction) then
-    local tmux_direction = DIRECTION_MAP[direction]
-    if tmux_direction then
-      -- Check if tmux script is available
-      if not check_tmux_script() then
-        vim.notify(
-          'smart-tmux-nav: tmux-smart-switch-pane not found in PATH!\n'
-            .. 'Please run the install script or manually copy the script to your PATH.\n'
-            .. 'See :help smart-tmux-nav-installation for details.',
-          vim.log.levels.ERROR
-        )
-        return
-      end
-
-      debug_log('At edge, calling tmux script: tmux-smart-switch-pane %s', tmux_direction)
-      local result = vim.fn.system('tmux-smart-switch-pane ' .. tmux_direction)
-      if vim.v.shell_error ~= 0 then
-        vim.notify(string.format('tmux navigation failed: %s', result), vim.log.levels.ERROR)
-      end
-    end
+    debug_log('At edge, navigating to tmux')
+    navigate_to_tmux(direction)
   else
     -- Not at edge: navigate within vim
     navigate_within_vim(direction)

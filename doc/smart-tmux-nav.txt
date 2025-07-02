@@ -153,6 +153,9 @@ Default configuration:
       
       -- Disable auto-focus when coming from a floating window
       disable_when_floating = true,
+      
+      -- Navigate directly to tmux pane from floating window
+      navigate_from_floating = true,
     })
 <
 
@@ -179,6 +182,13 @@ disable_when_floating       boolean (default: true)
     a tmux pane back to Neovim if the current window is a floating window.
     This prevents disrupting your workflow when working with floating windows
     like LSP hover, diagnostics, or completion menus.
+
+                               *smart-tmux-nav-config.navigate_from_floating*
+navigate_from_floating      boolean (default: true)
+    When true, navigation from a floating window will skip Neovim window
+    navigation and move directly to tmux panes. This provides a more
+    intuitive experience when working with floating windows. Set to false
+    to use normal window navigation behavior.
 
 ==============================================================================
 COMMANDS                                            *smart-tmux-nav-commands*
