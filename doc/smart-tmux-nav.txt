@@ -150,6 +150,9 @@ Default configuration:
       
       -- Enable debug mode
       debug = false,
+      
+      -- Disable auto-focus when coming from a floating window
+      disable_when_floating = true,
     })
 <
 
@@ -169,6 +172,13 @@ modes                       table (default: {'n', 't'})
                                              *smart-tmux-nav-config.debug*
 debug                       boolean (default: false)
     Enable debug logging.
+
+                                *smart-tmux-nav-config.disable_when_floating*
+disable_when_floating       boolean (default: true)
+    When true, disables automatic window focus changes when navigating from
+    a tmux pane back to Neovim if the current window is a floating window.
+    This prevents disrupting your workflow when working with floating windows
+    like LSP hover, diagnostics, or completion menus.
 
 ==============================================================================
 COMMANDS                                            *smart-tmux-nav-commands*

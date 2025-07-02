@@ -118,6 +118,9 @@ require('smart-tmux-nav').setup({
 
   -- Enable debug mode
   debug = false,
+
+  -- Disable auto-focus when coming from a floating window
+  disable_when_floating = true,
 })
 ```
 
@@ -144,6 +147,18 @@ Enable debug mode to see what's happening:
 ```lua
 require('smart-tmux-nav').setup({
   debug = true,
+})
+```
+
+### Floating Window Behavior
+
+By default, when you navigate from a tmux pane back to Neovim while a floating window is active, the plugin will not automatically change window focus. This prevents disrupting your workflow when working with floating windows (like LSP hover, diagnostics, etc.).
+
+To enable auto-focus even when coming from floating windows:
+
+```lua
+require('smart-tmux-nav').setup({
+  disable_when_floating = false,
 })
 ```
 

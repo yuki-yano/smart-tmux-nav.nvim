@@ -403,6 +403,23 @@ function M.process_tmux_window_selection()
         is_cycle
       )
 
+      -- Check if we should skip auto-focus when coming from a floating window
+      if state.config.disable_when_floating then
+        -- Check if current window is a floating window
+        local current_win = vim.api.nvim_get_current_win()
+        local win_config = vim.api.nvim_win_get_config(current_win)
+        
+        if win_config.relative ~= '' then
+          debug_log('Skipping auto-focus: coming from floating window')
+          -- Clear the environment variables without changing focus
+          vim.fn.system('tmux set-environment -u NVIM_CURSOR_Y')
+          vim.fn.system('tmux set-environment -u NVIM_CURSOR_X')
+          vim.fn.system('tmux set-environment -u NVIM_SELECT_DIRECTION')
+          vim.fn.system('tmux set-environment -u NVIM_IS_CYCLE')
+          return
+        end
+      end
+
       -- Use cursor position with cycle information
       select_window_by_cursor_position(tonumber(cursor_y_percent), tonumber(cursor_x_percent), direction, is_cycle)
 
