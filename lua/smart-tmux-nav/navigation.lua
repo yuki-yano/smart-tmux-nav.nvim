@@ -9,7 +9,10 @@ local state = {
   tmux_script_available = false,
   window_bounds_cache = nil,
   window_bounds_cache_valid = false,
+  normal_window_count_cache = nil,
+  normal_window_count_cache_valid = false,
   window_bounds_cache_autocmds_initialized = false,
+  pending_tmux_selection_check = true,
 }
 
 -- Constants
@@ -58,9 +61,23 @@ local function collect_normal_window_bounds()
   return windows
 end
 
+local function collect_normal_window_count()
+  local count = 0
+
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_get_config(win).relative == '' then
+      count = count + 1
+    end
+  end
+
+  return count
+end
+
 local function invalidate_window_bounds_cache()
   state.window_bounds_cache = nil
   state.window_bounds_cache_valid = false
+  state.normal_window_count_cache = nil
+  state.normal_window_count_cache_valid = false
 end
 
 local function setup_window_bounds_cache_autocmds()
@@ -84,7 +101,19 @@ local function get_normal_window_bounds()
 
   state.window_bounds_cache = collect_normal_window_bounds()
   state.window_bounds_cache_valid = true
+  state.normal_window_count_cache = #state.window_bounds_cache
+  state.normal_window_count_cache_valid = true
   return state.window_bounds_cache
+end
+
+local function get_normal_window_count()
+  if state.normal_window_count_cache_valid and state.normal_window_count_cache ~= nil then
+    return state.normal_window_count_cache
+  end
+
+  state.normal_window_count_cache = collect_normal_window_count()
+  state.normal_window_count_cache_valid = true
+  return state.normal_window_count_cache
 end
 
 local function is_floating_window(win)
@@ -119,10 +148,8 @@ end
 
 -- Check if current window is at the edge in given direction
 local function is_at_edge(direction)
-  local windows = get_normal_window_bounds()
-
   -- Single window is always at edge
-  if #windows <= 1 then
+  if get_normal_window_count() <= 1 then
     return true
   end
 
@@ -246,14 +273,23 @@ end
 function M.init(config)
   state.config = config
   state.in_tmux = vim.env.TMUX ~= nil
+  state.pending_tmux_selection_check = state.in_tmux
   invalidate_window_bounds_cache()
   setup_window_bounds_cache_autocmds()
-  debug_log('Initialized with config: %s', vim.inspect(config))
+  if state.config.debug then
+    debug_log('Initialized with config: %s', vim.inspect(config))
+  end
 end
 
 -- Public: Check if running in tmux
 function M.in_tmux()
   return state.in_tmux
+end
+
+function M.mark_focus_lost()
+  if state.in_tmux then
+    state.pending_tmux_selection_check = true
+  end
 end
 
 -- Helper function to navigate to tmux
@@ -331,6 +367,11 @@ function M.process_tmux_window_selection()
   if not state.in_tmux then
     return
   end
+
+  if not state.pending_tmux_selection_check then
+    return
+  end
+  state.pending_tmux_selection_check = false
 
   -- Check for tmux environment variables
   local env_result = vim.fn.system('tmux show-environment 2>/dev/null')

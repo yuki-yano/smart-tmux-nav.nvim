@@ -128,22 +128,6 @@ cursor_aligns_with_pane() {
     esac
 }
 
-# Calculate distance to pane based on direction
-calculate_distance() {
-    local direction=$1
-    local pane_left=$2
-    local pane_top=$3
-    local pane_width=$4
-    local pane_height=$5
-    
-    case "$direction" in
-        L) echo $((PANE_LEFT - (pane_left + pane_width))) ;;
-        R) echo $((pane_left - (PANE_LEFT + PANE_WIDTH))) ;;
-        U) echo $((PANE_TOP - (pane_top + pane_height))) ;;
-        D) echo $((pane_top - (PANE_TOP + PANE_HEIGHT))) ;;
-    esac
-}
-
 # Check if command name corresponds to Neovim/Vim
 is_neovim_command() {
     local pane_cmd=$1
@@ -164,22 +148,64 @@ get_pane_geometry_and_command() {
     return 1
 }
 
-# Find best pane in specified direction
-find_best_pane() {
+# Find best pane and edge pane in specified direction (single pass)
+find_best_and_edge_pane() {
     local direction=$1
     local best_pane=""
     local best_distance=$INFINITE_DISTANCE
-    
+    local edge_pane=""
+    local best_position
+
+    # Initialize based on direction (opposite edge)
+    case "$direction" in
+        L) best_position=-1 ;;           # Find rightmost
+        R) best_position=$INFINITE_DISTANCE ;;  # Find leftmost
+        U) best_position=-1 ;;           # Find bottommost
+        D) best_position=$INFINITE_DISTANCE ;;  # Find topmost
+    esac
+
     while IFS=' ' read -r pane_id pane_active pane_cursor_x pane_cursor_y pane_left pane_top pane_width pane_height pane_cmd; do
         # Skip current pane
         [ "$pane_id" = "$CURRENT_PANE" ] && continue
-        
-        # Check if pane is in the correct direction
-        if is_pane_in_direction "$direction" "$pane_left" "$pane_top" "$pane_width" "$pane_height"; then
-            # Check if cursor aligns with this pane
-            if cursor_aligns_with_pane "$direction" "$pane_left" "$pane_top" "$pane_width" "$pane_height"; then
-                local distance=$(calculate_distance "$direction" "$pane_left" "$pane_top" "$pane_width" "$pane_height")
-                
+
+        # Check if cursor aligns with this pane
+        if cursor_aligns_with_pane "$direction" "$pane_left" "$pane_top" "$pane_width" "$pane_height"; then
+            local position
+
+            # Get position based on direction
+            case "$direction" in
+                L) position=$((pane_left + pane_width)) ;;  # Right edge
+                R) position=$pane_left ;;                     # Left edge
+                U) position=$((pane_top + pane_height)) ;;   # Bottom edge
+                D) position=$pane_top ;;                      # Top edge
+            esac
+
+            # Update edge pane based on direction
+            case "$direction" in
+                L|U) # Looking for maximum position
+                    if [ "$position" -gt "$best_position" ]; then
+                        best_position=$position
+                        edge_pane=$pane_id
+                    fi
+                    ;;
+                R|D) # Looking for minimum position
+                    if [ "$position" -lt "$best_position" ]; then
+                        best_position=$position
+                        edge_pane=$pane_id
+                    fi
+                    ;;
+            esac
+
+            # Check if pane is in the correct direction
+            if is_pane_in_direction "$direction" "$pane_left" "$pane_top" "$pane_width" "$pane_height"; then
+                local distance
+                case "$direction" in
+                    L) distance=$((PANE_LEFT - (pane_left + pane_width))) ;;
+                    R) distance=$((pane_left - (PANE_LEFT + PANE_WIDTH))) ;;
+                    U) distance=$((PANE_TOP - (pane_top + pane_height))) ;;
+                    D) distance=$((pane_top - (PANE_TOP + PANE_HEIGHT))) ;;
+                esac
+
                 # Only consider non-negative distances closer than current best
                 if [ "$distance" -ge 0 ] && [ "$distance" -lt "$best_distance" ]; then
                     best_distance=$distance
@@ -188,59 +214,8 @@ find_best_pane() {
             fi
         fi
     done <<< "$PANES_INFO"
-    
-    echo "$best_pane"
-}
 
-# Find edge pane for cycling (when no pane found in direction)
-find_edge_pane_for_cycling() {
-    local direction=$1
-    local best_pane=""
-    local best_position
-    
-    # Initialize based on direction (opposite edge)
-    case "$direction" in
-        L) best_position=-1 ;;           # Find rightmost
-        R) best_position=$INFINITE_DISTANCE ;;  # Find leftmost
-        U) best_position=-1 ;;           # Find bottommost
-        D) best_position=$INFINITE_DISTANCE ;;  # Find topmost
-    esac
-    
-    while IFS=' ' read -r pane_id pane_active pane_cursor_x pane_cursor_y pane_left pane_top pane_width pane_height pane_cmd; do
-        # Skip current pane
-        [ "$pane_id" = "$CURRENT_PANE" ] && continue
-        
-        # Check if cursor aligns with this pane
-        if cursor_aligns_with_pane "$direction" "$pane_left" "$pane_top" "$pane_width" "$pane_height"; then
-            local position
-            
-            # Get position based on direction
-            case "$direction" in
-                L) position=$((pane_left + pane_width)) ;;  # Right edge
-                R) position=$pane_left ;;                     # Left edge
-                U) position=$((pane_top + pane_height)) ;;   # Bottom edge
-                D) position=$pane_top ;;                      # Top edge
-            esac
-            
-            # Update best pane based on direction
-            case "$direction" in
-                L|U) # Looking for maximum position
-                    if [ "$position" -gt "$best_position" ]; then
-                        best_position=$position
-                        best_pane=$pane_id
-                    fi
-                    ;;
-                R|D) # Looking for minimum position
-                    if [ "$position" -lt "$best_position" ]; then
-                        best_position=$position
-                        best_pane=$pane_id
-                    fi
-                    ;;
-            esac
-        fi
-    done <<< "$PANES_INFO"
-    
-    echo "$best_pane"
+    printf '%s\t%s\n' "$best_pane" "$edge_pane"
 }
 
 # Setup Neovim integration for window selection
@@ -311,15 +286,19 @@ main() {
     # Initialize pane information
     init_pane_info
     
-    # Find best pane in specified direction
-    local target_pane=$(find_best_pane "$DIRECTION")
+    # Find best pane and edge pane in a single pass
+    local pane_result
+    pane_result=$(find_best_and_edge_pane "$DIRECTION")
+
+    local target_pane
+    local edge_pane
+    IFS=$'\t' read -r target_pane edge_pane <<< "$pane_result"
     
     if [ -n "$target_pane" ]; then
         # Found a suitable pane in the direction
         switch_to_pane "$target_pane" "false"
     else
         # No pane found in direction, try cycling to opposite edge
-        local edge_pane=$(find_edge_pane_for_cycling "$DIRECTION")
         switch_to_pane "$edge_pane" "true"
     fi
 }
