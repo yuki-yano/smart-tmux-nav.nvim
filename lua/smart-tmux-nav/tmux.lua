@@ -2,9 +2,9 @@
 local M = {}
 
 -- Setup tmux-specific commands and autocmds
-function M.setup(config)
+function M.setup(_config)
   -- Command for tmux to call when switching to Neovim pane
-  vim.api.nvim_create_user_command('TmuxSelectWindow', function(opts)
+  vim.api.nvim_create_user_command('TmuxSelectWindow', function(_opts)
     -- This command is handled by FocusGained event now
     vim.schedule(function()
       vim.cmd('echo ""')
@@ -14,13 +14,16 @@ function M.setup(config)
     desc = 'Select Neovim window based on cursor percentage (deprecated, use FocusGained)',
   })
 
+  if vim.env.TMUX == nil then
+    return
+  end
+
+  local nav = require('smart-tmux-nav.navigation')
+
   -- Auto-check for window selection on focus
   vim.api.nvim_create_autocmd('FocusGained', {
     group = vim.api.nvim_create_augroup('SmartTmuxNavigation', { clear = true }),
-    callback = function()
-      local nav = require('smart-tmux-nav.navigation')
-      nav.process_tmux_window_selection()
-    end,
+    callback = nav.process_tmux_window_selection,
     desc = 'Process tmux window selection on focus',
   })
 end

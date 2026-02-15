@@ -36,8 +36,24 @@ local default_config = {
   navigate_from_floating = true,
 }
 
+local VIM_DIRECTION_MAP = {
+  left = 'h',
+  down = 'j',
+  up = 'k',
+  right = 'l',
+}
+
 -- Current configuration
 local config = {}
+local nav_module = nil
+
+local function get_navigation_module()
+  if not nav_module then
+    nav_module = require('smart-tmux-nav.navigation')
+  end
+
+  return nav_module
+end
 
 -- Merge user config with defaults
 local function merge_config(user_config)
@@ -58,14 +74,14 @@ function M.setup(user_config)
   end
 
   -- Load navigation module
-  local nav = require('smart-tmux-nav.navigation')
+  local nav = get_navigation_module()
   nav.init(config)
 
   -- Setup keybindings if enabled
   if config.keybindings then
     for direction, key in pairs(config.keybindings) do
       if key then
-        local vim_direction = ({ left = 'h', down = 'j', up = 'k', right = 'l' })[direction]
+        local vim_direction = VIM_DIRECTION_MAP[direction]
         if vim_direction then
           vim.keymap.set(config.modes, key, function()
             nav.navigate(vim_direction)
@@ -83,7 +99,7 @@ end
 ---Navigate in the specified direction
 ---@param direction string Direction: 'h', 'j', 'k', or 'l'
 M.navigate = function(direction)
-  local nav = require('smart-tmux-nav.navigation')
+  local nav = get_navigation_module()
   nav.navigate(direction)
 end
 
