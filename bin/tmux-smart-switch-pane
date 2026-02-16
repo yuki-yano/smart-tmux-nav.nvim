@@ -218,13 +218,16 @@ find_best_and_edge_pane() {
     printf '%s\t%s\n' "$best_pane" "$edge_pane"
 }
 
-# Setup Neovim integration for window selection
-setup_neovim_integration() {
+# Setup Neovim integration and switch pane in a single tmux command
+# Returns:
+#   0 if target pane is Neovim and switch is performed here
+#   1 otherwise
+setup_neovim_integration_and_switch() {
     local target_pane=$1
     local is_cycle=$2
 
     local target_pane_info
-    target_pane_info=$(get_pane_geometry_and_command "$target_pane") || return 0
+    target_pane_info=$(get_pane_geometry_and_command "$target_pane") || return 1
 
     local dest_pane_left
     local dest_pane_top
@@ -233,35 +236,41 @@ setup_neovim_integration() {
     local pane_cmd
     read -r dest_pane_left dest_pane_top dest_pane_width dest_pane_height pane_cmd <<< "$target_pane_info"
 
-    if is_neovim_command "$pane_cmd"; then
-        # Calculate cursor position as percentage within target pane
-        local relative_cursor_y=$((ABSOLUTE_CURSOR_Y - dest_pane_top))
-        local relative_cursor_x=$((ABSOLUTE_CURSOR_X - dest_pane_left))
-
-        # Ensure cursor Y is within bounds
-        if [ "$relative_cursor_y" -lt 0 ]; then
-            relative_cursor_y=0
-        elif [ "$relative_cursor_y" -ge "$dest_pane_height" ]; then
-            relative_cursor_y=$((dest_pane_height - 1))
-        fi
-
-        # Ensure cursor X is within bounds
-        if [ "$relative_cursor_x" -lt 0 ]; then
-            relative_cursor_x=0
-        elif [ "$relative_cursor_x" -ge "$dest_pane_width" ]; then
-            relative_cursor_x=$((dest_pane_width - 1))
-        fi
-
-        # Calculate percentages
-        local cursor_percent_y=$((relative_cursor_y * 100 / dest_pane_height))
-        local cursor_percent_x=$((relative_cursor_x * 100 / dest_pane_width))
-
-        # Set environment variables for Neovim in a single tmux command
-        tmux set-environment NVIM_CURSOR_Y "$cursor_percent_y" \; \
-            set-environment NVIM_CURSOR_X "$cursor_percent_x" \; \
-            set-environment NVIM_SELECT_DIRECTION "$DIRECTION" \; \
-            set-environment NVIM_IS_CYCLE "$is_cycle"
+    if ! is_neovim_command "$pane_cmd"; then
+        return 1
     fi
+
+    # Calculate cursor position as percentage within target pane
+    local relative_cursor_y=$((ABSOLUTE_CURSOR_Y - dest_pane_top))
+    local relative_cursor_x=$((ABSOLUTE_CURSOR_X - dest_pane_left))
+
+    # Ensure cursor Y is within bounds
+    if [ "$relative_cursor_y" -lt 0 ]; then
+        relative_cursor_y=0
+    elif [ "$relative_cursor_y" -ge "$dest_pane_height" ]; then
+        relative_cursor_y=$((dest_pane_height - 1))
+    fi
+
+    # Ensure cursor X is within bounds
+    if [ "$relative_cursor_x" -lt 0 ]; then
+        relative_cursor_x=0
+    elif [ "$relative_cursor_x" -ge "$dest_pane_width" ]; then
+        relative_cursor_x=$((dest_pane_width - 1))
+    fi
+
+    # Calculate percentages
+    local cursor_percent_y=$((relative_cursor_y * 100 / dest_pane_height))
+    local cursor_percent_x=$((relative_cursor_x * 100 / dest_pane_width))
+
+    # Set environment variables first, then switch pane.
+    # This avoids a race where Neovim reads env values immediately on focus.
+    tmux set-environment NVIM_CURSOR_Y "$cursor_percent_y" \; \
+        set-environment NVIM_CURSOR_X "$cursor_percent_x" \; \
+        set-environment NVIM_SELECT_DIRECTION "$DIRECTION" \; \
+        set-environment NVIM_IS_CYCLE "$is_cycle" \; \
+        select-pane -t "$target_pane"
+
+    return 0
 }
 
 # Switch to specified pane with optional Neovim integration
@@ -270,8 +279,9 @@ switch_to_pane() {
     local is_cycle=$2
     
     if [ -n "$target_pane" ]; then
-        tmux select-pane -t "$target_pane"
-        setup_neovim_integration "$target_pane" "$is_cycle"
+        if ! setup_neovim_integration_and_switch "$target_pane" "$is_cycle"; then
+            tmux select-pane -t "$target_pane"
+        fi
     else
         # Fallback to standard tmux navigation
         tmux select-pane -"$DIRECTION"
